@@ -1,10 +1,12 @@
-﻿/*
+/*
 变量声明:
 	(%timeh%) 时数据
 	(%timem%) 分数据
 	(%times%) 秒数据
 	(%mode%) 隔离模式
 	(%timing%) 计时方法
+	(%myTime%) 时间
+	(%tt%) 临时变量
 标签声明:
 	(Button我要隔离:) 程序主要执行部分
 */
@@ -13,11 +15,13 @@ Process, Priority, , High  ; 脚本运行优先级为高
 #NoEnv ; 不检查空变量是否为环境变量
 #NoTrayIcon ; 取消托盘图标
 #SingleInstance, ignore ; 当脚本已经运行时重新开启新实例
+#InstallKeybdHook ; 强制安装键盘钩子
+#InstallMouseHook ; 强制安装鼠标钩子
 SetBatchLines -1 ; 脚本全速运行
 ListLines Off ; 在历史中略去后续执行的行
 SetWorkingDir %A_ScriptDir% ; 脚本当前工作目录
 
-;GUI
+; GUI
 {
 	Gui, -Border +Owner 
 	Gui Color, White
@@ -42,22 +46,40 @@ SetWorkingDir %A_ScriptDir% ; 脚本当前工作目录
 	Gui Add, Button, GGuiClose x15 y310 w130 h50, 我反悔了
 	Gui Add, Button, x155 y310 w130 h50, 我要隔离
 	Gui Show, w300 h375, 隔离电脑
-
 	Return
 }
 
 Button我要隔离:
-	Gui, Submit
-	Loop,20
+	Send {Volume_Mute} ; 静音或取消静音
+	Gui, Submit ; 写入变量并隐藏程序窗口
+
+	If timing = 1 ; 倒数计数法
 	{
-		;Run rundll32.exe user32.dll`,LockWorkStation
-		SendMessage, 0x112, 0xF170, 2,, Program Manager
-		Run, LockWorkStation.bat, , Hide,
-		BlockInput, On
-		Sleep, 100
+		timeh := % timeh*3600000
+		timem := % timem*60000
+		times := % times*1000
+		myTime := % timeh+timem+times
 	}
-	SendMessage, 0x112, 0xF170, -1,, Program Manager
-	BlockInput, Off
+	Else If timing = 2 ; 预设时间法
+	{
+
+	}
+
+	SetTimer, ban, -%myTime% ; 开始计时
+	Loop
+	{
+		;Run rundll32.exe user32.dll`,LockWorkStation ; 启动锁屏备选方案
+		SendMessage, 0x112, 0xF170, 2,, Program Manager ; 关闭显示器
+		Run, LockWorkStation.bat, , Hide, ; 隐藏启动锁屏 bat 命令
+		BlockInput, On ; 禁用键鼠
+
+	}
+	Return
+
+ban:
+	SendMessage, 0x112, 0xF170, -1,, Program Manager ; 点亮屏幕
+	BlockInput, Off ; 启用键鼠
+	WinShow, 隔离电脑 ahk_class AutoHotkeyGUI ; 显示程序窗口
 	Return
 
 GuiEscape:
@@ -68,14 +90,3 @@ GuiClose:
 		Return
 	}
 	ExitApp
-/*
-~LButton::
-	IfWinActive, 隔离电脑 ahk_class AutoHotkeyGUI
-	{
-		MsgBox, 123
-	}
-*/
-Return
-
-gui, add, button, , 一个按钮
-gui, show
