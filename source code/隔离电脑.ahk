@@ -24,7 +24,6 @@ SetBatchLines -1 ; 脚本全速运行
 ListLines Off ; 在历史中略去后续执行的行
 SetWorkingDir %A_ScriptDir% ; 脚本当前工作目录
 
-; GUI
 {
 	Gui, -Border +Owner 
 	Gui Color, White
