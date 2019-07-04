@@ -76,6 +76,10 @@ Button我要隔离:
 		}
 		If myTime < ATime
 		{
+			timeh := % (24-A_Hour+timeh)*3600000
+			timem := %
+			times := %
+			myTime := % timeh+timem+times
 		}
 	}
 	If myTime = 0
