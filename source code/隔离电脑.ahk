@@ -1,4 +1,4 @@
-/*
+﻿/*
 变量声明:
 	(%timeh%) 时数据
 	(%timem%) 分数据
@@ -12,6 +12,8 @@
 	(%ts%) 秒迁移
 标签声明:
 	(Button我要隔离:) 程序主要执行部分
+	(ban:) 隔离锁定操作
+	(free:) 隔离解锁操作
 */
 
 Process, Priority, , High  ; 脚本运行优先级为高
@@ -25,7 +27,7 @@ ListLines Off ; 在历史中略去后续执行的行
 SetWorkingDir %A_ScriptDir% ; 脚本当前工作目录
 
 {
-	Gui, -Border +Owner 
+	Gui, -Border +Owner
 	Gui Color, White
 
 	Gui Font, s15, Microsoft YaHei
@@ -51,7 +53,6 @@ SetWorkingDir %A_ScriptDir% ; 脚本当前工作目录
 }
 
 Button我要隔离:
-	Send {Volume_Mute} ; 静音或取消静音
 	Gui, Submit ; 写入变量并隐藏程序窗口
 
 	If timing = 1 ; 倒数计数法
@@ -73,12 +74,13 @@ Button我要隔离:
 		ATime := % th+tm+ts
 		If myTime > ATime
 		{
+			myTime := % myTime-ATime
 		}
-		If myTime < ATime
+		Else If myTime < ATime
 		{
 			timeh := % (24-A_Hour+timeh)*3600000
-			timem := %
-			times := %
+			timem := % (timem-A_Min)*60000
+			times := % (times-A_Sec)*1000
 			myTime := % timeh+timem+times
 		}
 	}
@@ -88,19 +90,32 @@ Button我要隔离:
 		WinShow, 隔离电脑 ahk_class AutoHotkeyGUI ; 显示程序窗口
 		Return
 	}
-	SetTimer, ban, -%myTime% ; 开始计时
-		Run rundll32.exe user32.dll`,LockWorkStation ; 启动锁屏备选方案
-		SendMessage, 0x112, 0xF170, 2,, Program Manager ; 关闭显示器
-		;Run, LockWorkStation.bat, , Hide, ; 隐藏启动锁屏 bat 命令
+	SoundSet, +1, , mute ; 静音或取消静音
+	SetTimer, free, -%myTime% ; 开始计时
+	If mode = 1 ; 强隔离模式
+	{
+		Loop
+		{
+			Sleep, 500
+			BlockInput, On ; 禁用键鼠
+			Run rundll32.exe user32.dll`,LockWorkStation ; 锁屏
+			SendMessage, 0x112, 0xF170, 2,, Program Manager ; 关闭显示器
+		}
+		Until myTime = 0
+	}
+	Else If mode = 2 ; 弱隔离模式
+	{
 		BlockInput, On ; 禁用键鼠
-	Return
-ban:
-	Send {Volume_Mute} ; 静音或取消静音
+		Run rundll32.exe user32.dll`,LockWorkStation ; 锁屏
+		Return
+	}
+	free:
+	myTime := 0
+	Sleep, 1000
 	WinShow, 隔离电脑 ahk_class AutoHotkeyGUI ; 显示程序窗口
-	; SendMessage, 0x112, 0xF170, -1,, Program Manager ; 点亮屏幕
 	BlockInput, Off ; 启用键鼠
+	Send, {Volume_Mute} ; 静音或取消静音
 	Return
-
 GuiEscape:
 GuiClose:
 	MsgBox, 262196, 这样不妥, 最讨厌出尔反尔的人了！再给你一次机会挽回，依然要反悔么？
