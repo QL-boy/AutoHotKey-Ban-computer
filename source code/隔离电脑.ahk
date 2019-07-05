@@ -102,6 +102,7 @@ Button我要隔离:
 			SendMessage, 0x112, 0xF170, 2,, Program Manager ; 关闭显示器
 		}
 		Until myTime = 0
+		Return
 	}
 	Else If mode = 2 ; 弱隔离模式
 	{
