@@ -13,6 +13,7 @@
 	(%ban%) 锁定状态
 	(%ttime%) 剩余时间
 	(%start%) 启动模式
+	(%AUTOBOOT%) 自启状态
 标签声明:
 	(Button我要隔离:) 程序主要执行部分
 	(ban:) 隔离锁定操作
@@ -27,6 +28,25 @@ SetBatchLines -1 ; 脚本全速运行
 ListLines Off ; 在历史中略去后续执行的行
 SetWorkingDir %A_ScriptDir% ; 脚本当前工作目录
 
+IniRead, ban, Ban-computer.ini, intercept, ban, 0 ; 读取脚本完成状态
+If ban = 1
+{
+	MsgBox, 4145, 即将隔离, 检测到上次隔离被中断，即将重启隔离, 2 ; 重启隔离提示，可以取消，但是反应时间很短
+	IfMsgBox, Cancel
+	{
+		ExitApp
+	}
+	IniRead, myTime, Ban-computer.ini, intercept, myTime, 0 ; 读取未完成剩余时间
+	IniRead, mode, Ban-computer.ini, intercept, mode, 0 ; 读取被中断的隔离模式
+	IniWrite, 2, Ban-computer.ini, intercept, start ; 设定中断启动模式
+	Goto, resumeban
+}
+IniRead, start, Ban-computer.ini, intercept, start, 0 
+If start = 0
+{
+	ExitApp
+}
+
 full_command_line := DllCall("GetCommandLine", "str")
 if not (A_IsAdmin or RegExMatch(full_command_line, " /restart(?!\S)"))
 {
@@ -40,21 +60,12 @@ if not (A_IsAdmin or RegExMatch(full_command_line, " /restart(?!\S)"))
     ExitApp
 }
 
-IniRead, ban, Ban-computer.ini, intercept, ban, 0 ; 读取脚本完成状态
-If ban = 1
+IniRead, AUTOBOOT, Ban-computer.ini, intercept, AUTOBOOT, 0 
+If AUTOBOOT = 1
 {
-	MsgBox, 4145, 即将隔离, 检测到上次隔离被中断，即将重启隔离, 2 ; 重启隔离提示，可以取消，但是反应时间很短
-	IfMsgBox, Cancel
-	{
-		ExitApp
-	}
-	IniRead, myTime, Ban-computer.ini, intercept, myTime, 0 ; 读取未完成剩余时间
-	Goto, resumeban
-}
-IniRead, start, Ban-computer.ini, intercept, start, 0 
-If start = 0
-{
-	ExitApp
+	Loop, Files, Ban-computer.ahk
+	Loop, Files, %A_LoopFileLongPath%
+	FileCreateShortcut,  %A_LoopFileLongPath%, C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\Ban-computer.lnk, %A_LoopFileDir%
 }
 
 Gui, -Border +Owner
@@ -126,6 +137,7 @@ Button我要隔离:
 	SoundSet, +1, , mute ; 静音或取消静音
 	SetTimer, free, -%myTime% ; 开始计时
 	IniWrite, 1, Ban-computer.ini, intercept, ban ; 设定隔离状态未完成
+	IniWrite, %mode%, Ban-computer.ini, intercept, mode ; 设定隔离当前隔离模式
 	If mode = 1 ; 强隔离模式
 	{
 		Loop
@@ -149,11 +161,17 @@ Button我要隔离:
 	free:
 	myTime := 0
 	Sleep, 1000
-	WinShow, 隔离电脑 ahk_class AutoHotkeyGUI ; 显示程序窗口
 	BlockInput, Off ; 启用键鼠
 	Send, {Volume_Mute} ; 静音或取消静音
 	IniWrite, 0, Ban-computer.ini, intercept, myTime ; 剩余时间归零
 	IniWrite, 0, Ban-computer.ini, intercept, ban ; 设定隔离状态已完成
+	IniWrite, 0, Ban-computer.ini, intercept, mode ; 消除隔离模式
+	IniRead, start, Ban-computer.ini, intercept, start, 0 ; 读取启动方式
+	If start = 2
+	{
+		ExitApp
+	}
+	WinShow, 隔离电脑 ahk_class AutoHotkeyGUI ; 显示程序窗口
 	Return
 GuiEscape:
 GuiClose:
