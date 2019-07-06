@@ -169,6 +169,7 @@ Button我要隔离:
 	IniRead, start, Ban-computer.ini, intercept, start, 0 ; 读取启动方式
 	If start = 2
 	{
+		IniWrite, 0, Ban-computer.ini, intercept, start ; 复位启动模式
 		ExitApp
 	}
 	WinShow, 隔离电脑 ahk_class AutoHotkeyGUI ; 显示程序窗口
